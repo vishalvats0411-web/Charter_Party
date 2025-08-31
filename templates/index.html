@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart CP Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Document Preview Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <!-- Multiple HTMLtoDOCX library sources for better compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@1.4.7/dist/html-docx.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js@1.4.7/dist/html-docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/1.4.7/html-docx.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --accent-color: #198754;
+            --light-bg: #f8f9fa;
+            --dark-bg: #212529;
+            --removed-color: #ffcccc;
+            --added-color: #ccffcc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7f9;
+            color: #333;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: white;
+            padding: 3rem 0;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background-color: var(--light-bg);
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: #e8f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: #e8f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+        }
+
+        .btn-success {
+            background-color: var(--accent-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .process-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .process-step {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+
+        .process-step .step-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--light-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .process-step.active .step-icon {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .process-step.completed .step-icon {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .process-indicator::before {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--secondary-color);
+            z-index: 1;
+        }
+
+        .file-preview {
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        #resultSection {
+            display: none;
+        }
+
+        #changesSection {
+            display: none;
+        }
+
+        .alert-danger {
+            display: none;
+        }
+
+        .change-item {
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: white;
+            border-radius: 4px;
+        }
+
+        .original-text {
+            background-color: var(--removed-color);
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .new-text {
+            background-color: var(--added-color);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .changes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .changes-summary {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+        }
+
+        /* Document Preview Styles */
+        .preview-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            margin-top: 1rem;
+        }
+
+        .preview-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .preview-content {
+            padding: 1rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .preview-original {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .preview-editable {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        .preview-editable [contenteditable="true"] {
+            padding: 0.25rem;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .preview-editable [contenteditable="true"]:hover {
+            background-color: #f8f9fa;
+        }
+
+        .preview-editable [contenteditable="true"]:focus {
+            background-color: #e3f2fd;
+            outline: 2px solid #2196f3;
+        }
+
+        .preview-editable .modified {
+            border-left: 4px solid #ff9800;
+            background-color: #fff3e0;
+            padding-left: 0.5rem;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .preview-toggle {
+            display: none;
+        }
+
+        .preview-toggle.active {
+            display: block;
+        }
+
+        /* Prose styles for document content */
+        .prose {
+            line-height: 1.6;
+        }
+
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+        }
+
+        .prose h1 { font-size: 1.875rem; }
+        .prose h2 { font-size: 1.5rem; }
+        .prose h3 { font-size: 1.25rem; }
+
+        .prose p {
+            margin-bottom: 1em;
+        }
+
+        .prose ul, .prose ol {
+            margin-bottom: 1em;
+            padding-left: 1.5em;
+        }
+
+        .prose li {
+            margin-bottom: 0.5em;
+        }
+
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+
+        .prose td, .prose th {
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .prose th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        /* Fix for file inputs */
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-type-warning {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-ship me-2"></i>Smart CP Generator
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#howItWorks">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">Smart Charter Party Generator</h1>
+            <p class="lead mb-4">Transform your Base CP and Recap documents into a finalized Charter Party</p>
+            <button class="btn btn-light btn-lg px-4" onclick="scrollToUpload()">
+                Get Started <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Error Alert -->
+        <div class="alert alert-danger" id="errorAlert" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span id="errorMessage"></span>
+        </div>
+
+        <!-- Process Indicator -->
+        <div class="process-indicator">
+            <div class="process-step active" id="step1">
+                <div class="step-icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <p>Upload Documents</p>
+            </div>
+            <div class="process-step" id="step2">
+                <div class="step-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <p>Processing</p>
+            </div>
+            <div class="process-step" id="step3">
+                <div class="step-icon">
+                    <i class="fas fa-file-download"></i>
+                </div>
+                <p>Download Result</p>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="row justify-content-center" id="uploadSection">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <h3 class="card-title mb-4">Upload Your Documents</h3>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>File Requirements:</strong> Only DOCX files are supported. Maximum file size: 10MB per file.
+                        </div>
+
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="upload-area" id="baseCPUploadArea">
+                                        <div class="upload-icon">
+                                            <i class="fas fa-file-contract"></i>
+                                        </div>
+                                        <h5>Base Charter Party</h5>
+                                        <p class="text-muted">Upload your Base CP document (DOCX only)</p>
+                                        <p class="file-type-warning">Only .docx files accepted</p>
+                                        <input type="file" id="baseCPFile" name="baseCP" accept=".docx" hidden>
+                                    </div>
+                                    <div class="file-preview" id="baseCPPreview">
+                                        <p class="text-center text-muted">No file selected</p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <div class="upload-area" id="recapUploadArea">
+                                        <div class="upload-icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <h5>Recap Document</h5>
+                                        <p class="text-muted">Upload your Recap document (DOCX only)</p>
+                                        <p class="file-type-warning">Only .docx files accepted</p>
+                                        <input type="file" id="recapFile" name="recap" accept=".docx" hidden>
+                                    </div>
+                                    <div class="file-preview" id="recapPreview">
+                                        <p class="text-center text-muted">No file selected</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg px-5" id="processBtn">
+                                    <i class="fas fa-bolt me-2"></i>Generate Charter Party
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Processing your documents... This may take a minute.</p>
+        </div>
+
+        <!-- Result Section -->
+        <div class="row justify-content-center" id="resultSection">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                            <h3 class="mt-3">Charter Party Generated Successfully!</h3>
+                            <p class="text-muted">Your customized Charter Party is ready for download</p>
+                        </div>
+
+                        <div class="file-preview mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="file-name" id="generatedFileName">Final_Working_CP_Generated_Clean.docx
+                                    </h5>
+                                    <p class="file-info">Generated just now • DOCX Format</p>
+                                </div>
+                                <div>
+                                    <a class="btn btn-success" id="downloadLink">
+                                        <i class="fas fa-download me-2"></i>Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Review Recommended:</strong> Please review the generated document before finalizing.
+                            You can make additional edits if needed.
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button class="btn btn-outline-primary me-2" onclick="showPreview()">
+                                <i class="fas fa-eye me-2"></i>Preview Document
+                            </button>
+                            <button class="btn btn-outline-primary me-2" onclick="showChanges()">
+                                <i class="fas fa-list me-2"></i>View Changes
+                            </button>
+                            <button class="btn btn-outline-primary me-2" onclick="resetApp()">
+                                <i class="fas fa-redo me-2"></i>Process Another
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Changes Section -->
+        <div class="row justify-content-center" id="changesSection">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <div class="changes-header">
+                            <h3 class="card-title mb-0">Document Changes</h3>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="hideChanges()">
+                                <i class="fas fa-times me-1"></i>Close
+                            </button>
+                        </div>
+
+                        <div class="changes-summary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">Changes Summary</h5>
+                                    <p class="mb-0 text-muted" id="changesCount">0 changes made to the document</p>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary" id="addedCount">0 additions</span>
+                                    <span class="badge bg-danger" id="removedCount">0 removals</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="changesList">
+                            <!-- Changes will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="row justify-content-center" id="previewSection">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="card-title mb-0">Document Preview & Editor</h3>
+                                <p class="text-muted mb-0">Preview and edit your generated Charter Party document</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="hidePreview()">
+                                    <i class="fas fa-times me-1"></i>Close
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="preview-container">
+                            <div class="preview-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">Document Editor</h5>
+                                        <p class="mb-0 text-muted">Make changes directly in the document. Modified sections are highlighted.</p>
+                                    </div>
+                                    <div class="preview-controls">
+                                        <label class="form-label me-2">
+                                            View Mode:
+                                            <select id="viewMode" class="form-select form-select-sm ms-1" style="width: auto;">
+                                                <option value="side-by-side">Side by Side</option>
+                                                <option value="toggle">Toggle Original/Edited</option>
+                                            </select>
+                                        </label>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="saveEdits()">
+                                            <i class="fas fa-save me-1"></i>Save Edits
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="discardEdits()">
+                                            <i class="fas fa-undo me-1"></i>Discard Edits
+                                        </button>
+                                        <button class="btn btn-sm btn-success" onclick="downloadEdited()">
+                                            <i class="fas fa-download me-1"></i>Download Edited
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="reloadLibraries()" title="Reload libraries if download fails">
+                                            <i class="fas fa-sync-alt me-1"></i>Reload Libraries
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="debugLibraries()" title="Debug library loading issues">
+                                            <i class="fas fa-bug me-1"></i>Debug
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="preview-content">
+                                <div class="row">
+                                    <!-- Original Document -->
+                                    <div class="col-md-6 preview-toggle active" id="originalPreview">
+                                        <div class="preview-original">
+                                            <h6>Original Document</h6>
+                                            <div id="originalContent" class="prose">
+                                                <div class="text-center text-muted">
+                                                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                    <p>Loading original document...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Editable Document -->
+                                    <div class="col-md-6 preview-toggle active" id="editablePreview">
+                                        <div class="preview-editable">
+                                            <h6>Editable Document</h6>
+                                            <div id="editableContent" class="prose">
+                                                <div class="text-center text-muted">
+                                                    <i class="fas fa-edit fa-2x mb-2"></i>
+                                                    <p>Loading editable document...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-sm">
+                                            <span id="changesSummary">0 sections modified</span>
+                                            <span class="text-muted ms-2">• Click any paragraph to edit</span>
+                                        </div>
+                                        <div class="text-sm text-muted">
+                                            <span id="editStatus">Ready to edit</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <section id="howItWorks" class="my-5 py-5">
+            <div class="text-center mb-5">
+                <h2>How It Works</h2>
+                <p class="text-muted">Three simple steps to generate your Charter Party</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon">
+                                <i class="fas fa-upload"></i>
+                            </div>
+                            <h4>1. Upload Documents</h4>
+                            <p>Upload your Base Charter Party and Recap documents in DOCX format.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <h4>2. AI Processing</h4>
+                            <p>Our AI analyzes both documents and maps recap terms to the correct CP clauses.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon">
+                                <i class="fas fa-file-download"></i>
+                            </div>
+                            <h4>3. Download & Review</h4>
+                            <p>Download your customized Charter Party with tracked changes for final review.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="my-5 py-5 bg-light rounded-3">
+            <div class="text-center mb-5">
+                <h2>Why Use Smart CP Generator</h2>
+                <p class="text-muted">Save time and reduce errors in your charter party process</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            <i class="fas fa-clock text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4>Save Time</h4>
+                            <p>Reduce hours of manual editing to just minutes of processing time.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            <i class="fas fa-bug text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4>Reduce Errors</h4>
+                            <p>Minimize clerical errors and missed recap terms with automated processing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            <i class="fas fa-bolt text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4>Faster Negotiations</h4>
+                            <p>Issue clean working CP documents minutes after recap agreement.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            <i class="fas fa-check-circle text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h4>Legal Consistency</h4>
+                            <p>Ensure your CP is legally consistent with what was agreed upon.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h5>Smart CP Generator</h5>
+                    <p>Your digital chartering assistant for faster, more accurate Charter Party generation.</p>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h5>Legal</h5>
+                    <p>Terms of Service</p>
+                    <p>Privacy Policy</p>
+                </div>
+            </div>
+            <hr class="mt-4 mb-4" style="border-color: rgba(255,255,255,0.1);">
+            <div class="text-center">
+                <p>© 2023 Smart CP Generator. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File upload handling - FIXED VERSION
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check library loading status
+            setTimeout(() => {
+                checkLibraries();
+            }, 1000); // Wait 1 second for libraries to load
+            
+            // Get file input elements
+            const baseCPFile = document.getElementById('baseCPFile');
+            const recapFile = document.getElementById('recapFile');
+
+            // Add change event listeners
+            if (baseCPFile) {
+                baseCPFile.addEventListener('change', function (e) {
+                    handleFileSelect(e, 'baseCPPreview');
+                });
+            }
+
+            if (recapFile) {
+                recapFile.addEventListener('change', function (e) {
+                    handleFileSelect(e, 'recapPreview');
+                });
+            }
+
+            // Add click event listeners to the upload areas
+            document.querySelectorAll('.upload-area').forEach(area => {
+                area.addEventListener('click', function (e) {
+                    // Prevent event from bubbling to parent elements
+                    e.stopPropagation();
+
+                    // Find which area was clicked and trigger the correct file input
+                    const h5Text = this.querySelector('h5').textContent;
+                    if (h5Text.includes('Base')) {
+                        document.getElementById('baseCPFile').click();
+                    } else {
+                        document.getElementById('recapFile').click();
+                    }
+                });
+            });
+
+            // Add drag and drop functionality
+            document.querySelectorAll('.upload-area').forEach(area => {
+                area.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+
+                area.addEventListener('dragleave', function (e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+
+                area.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        // Check if file is DOCX
+                        const fileName = files[0].name.toLowerCase();
+                        const fileExtension = fileName.split('.').pop();
+                        
+                        if (fileExtension !== 'docx') {
+                            showError('Only DOCX files are supported. Please upload a .docx file.');
+                            return;
+                        }
+
+                        // Check file size
+                        const maxSize = 10 * 1024 * 1024; // 10MB
+                        if (files[0].size > maxSize) {
+                            showError('File size too large. Please upload a file smaller than 10MB.');
+                            return;
+                        }
+
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(files[0]);
+
+                        if (this.id === 'baseCPUploadArea') {
+                            document.getElementById('baseCPFile').files = dataTransfer.files;
+                            handleFileSelect({ target: { files: dataTransfer.files } }, 'baseCPPreview');
+                        } else {
+                            document.getElementById('recapFile').files = dataTransfer.files;
+                            handleFileSelect({ target: { files: dataTransfer.files } }, 'recapPreview');
+                        }
+                    }
+                });
+            });
+
+            // Form submission
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    const baseCPFile = document.getElementById('baseCPFile').files[0];
+                    const recapFile = document.getElementById('recapFile').files[0];
+
+                    if (!baseCPFile || !recapFile) {
+                        showError('Please upload both Base CP and Recap documents.');
+                        return;
+                    }
+
+                    // Validate file types more thoroughly
+                    const baseCPExtension = baseCPFile.name.toLowerCase().split('.').pop();
+                    const recapExtension = recapFile.name.toLowerCase().split('.').pop();
+                    
+                    if (baseCPExtension !== 'docx' || recapExtension !== 'docx') {
+                        showError('Only DOCX files are supported. Please upload .docx files.');
+                        return;
+                    }
+
+                    // Validate file sizes
+                    const maxSize = 10 * 1024 * 1024; // 10MB
+                    if (baseCPFile.size > maxSize || recapFile.size > maxSize) {
+                        showError('One or more files are too large. Please upload files smaller than 10MB.');
+                        return;
+                    }
+
+                    // Hide any previous errors
+                    hideError();
+
+                    // Show loading, hide upload section
+                    document.getElementById('uploadSection').style.display = 'none';
+                    document.getElementById('loadingSpinner').style.display = 'block';
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step2').classList.add('active');
+
+                    // Create FormData and send request
+                    const formData = new FormData();
+                    formData.append('baseCP', baseCPFile);
+                    formData.append('recap', recapFile);
+
+                    fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show success
+                                document.getElementById('loadingSpinner').style.display = 'none';
+                                document.getElementById('resultSection').style.display = 'block';
+                                document.getElementById('step2').classList.remove('active');
+                                document.getElementById('step3').classList.add('active');
+                                document.getElementById('step3').classList.add('completed');
+
+                                // Set download link
+                                const downloadLink = document.getElementById('downloadLink');
+                                downloadLink.href = data.download_url;
+                                downloadLink.download = data.filename;
+                                document.getElementById('generatedFileName').textContent = data.filename;
+
+                                // Store document URLs for preview functionality
+                                window.currentDocumentUrl = data.preview_url || data.download_url;
+                                window.currentDocumentName = data.filename;
+
+                                // Store changes data for display
+                                if (data.changes) {
+                                    window.documentChanges = data.changes;
+                                } else {
+                                    // For demo purposes, generate some sample changes
+                                    window.documentChanges = generateSampleChanges();
+                                }
+                            } else {
+                                throw new Error(data.error || 'Unknown error occurred');
+                            }
+                        })
+                        .catch(error => {
+                            document.getElementById('loadingSpinner').style.display = 'none';
+                            document.getElementById('uploadSection').style.display = 'block';
+                            document.getElementById('step2').classList.remove('active');
+                            document.getElementById('step1').classList.add('active');
+                            showError(error.message);
+                        });
+                });
+            }
+        });
+
+        function handleFileSelect(event, previewElementId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type more thoroughly
+            const fileName = file.name.toLowerCase();
+            const fileExtension = fileName.split('.').pop();
+            
+            if (fileExtension !== 'docx') {
+                showError('Only DOCX files are supported. Please upload a .docx file.');
+                // Clear the invalid file
+                event.target.value = '';
+                return;
+            }
+
+            // Additional validation for file size (max 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                showError('File size too large. Please upload a file smaller than 10MB.');
+                event.target.value = '';
+                return;
+            }
+
+            const previewElement = document.getElementById(previewElementId);
+            const fileSize = (file.size / 1024).toFixed(2);
+            const displayName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+
+            previewElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="file-name">${displayName}</h5>
+                    <p class="file-info">DOCX • ${fileSize} KB</p>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); removeFile('${event.target.id}', '${previewElementId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+            // Hide any previous errors
+            hideError();
+        }
+
+        function removeFile(inputId, previewElementId) {
+            const inputElement = document.getElementById(inputId);
+            if (inputElement) {
+                inputElement.value = '';
+            }
+            const previewElement = document.getElementById(previewElementId);
+            if (previewElement) {
+                previewElement.innerHTML = '<p class="text-center text-muted">No file selected</p>';
+            }
+        }
+
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (errorAlert && errorMessage) {
+                errorMessage.textContent = message;
+                errorAlert.style.display = 'block';
+
+                // Scroll to error
+                errorAlert.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function hideError() {
+            const errorAlert = document.getElementById('errorAlert');
+            if (errorAlert) {
+                errorAlert.style.display = 'none';
+            }
+        }
+
+        function showChanges() {
+            if (!window.documentChanges || window.documentChanges.length === 0) {
+                showError('No changes data available.');
+                return;
+            }
+
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('changesSection').style.display = 'block';
+
+            // Populate changes list
+            const changesList = document.getElementById('changesList');
+            changesList.innerHTML = '';
+
+            let addedCount = 0;
+            let removedCount = 0;
+
+            window.documentChanges.forEach((change, index) => {
+                const changeItem = document.createElement('div');
+                changeItem.className = 'change-item';
+
+                // Count additions and removals for summary
+                if (change.old_text && change.old_text.trim() === '') addedCount++;
+                else if (change.new_text && change.new_text.trim() === '') removedCount++;
+                else {
+                    addedCount++;
+                    removedCount++;
+                }
+
+                changeItem.innerHTML = `
+                <h6>Change ${index + 1}</h6>
+                ${change.old_text && change.old_text.trim() ? `
+                    <div class="original-text">
+                        <strong>Original:</strong> ${truncateText(change.old_text, 200)}
+                    </div>
+                ` : ''}
+                ${change.new_text && change.new_text.trim() ? `
+                    <div class="new-text">
+                        <strong>Updated:</strong> ${truncateText(change.new_text, 200)}
+                    </div>
+                ` : ''}
+            `;
+
+                changesList.appendChild(changeItem);
+            });
+
+            // Update summary
+            document.getElementById('changesCount').textContent =
+                `${window.documentChanges.length} changes made to the document`;
+            document.getElementById('addedCount').textContent = `${addedCount} additions`;
+            document.getElementById('removedCount').textContent = `${removedCount} removals`;
+        }
+
+        function hideChanges() {
+            document.getElementById('changesSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'block';
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // For demo purposes - generates sample changes
+        function generateSampleChanges() {
+            return [
+                {
+                    old_text: "Freight rate: $15,000 per day",
+                    new_text: "Freight rate: $16,500 per day"
+                },
+                {
+                    old_text: "Laycan: 15-20 October 2023",
+                    new_text: "Laycan: 18-23 October 2023"
+                },
+                {
+                    old_text: "Loading port: Rotterdam",
+                    new_text: "Loading port: Rotterdam, Netherlands"
+                },
+                {
+                    old_text: "",
+                    new_text: "Demurrage rate: $25,000 per day, pro rata"
+                },
+                {
+                    old_text: "Dispatch rate: $12,000 per day",
+                    new_text: ""
+                }
+            ];
+        }
+
+        // Reset application
+        function resetApp() {
+            const baseCPFile = document.getElementById('baseCPFile');
+            const recapFile = document.getElementById('recapFile');
+
+            if (baseCPFile) baseCPFile.value = '';
+            if (recapFile) recapFile.value = '';
+
+            document.getElementById('baseCPPreview').innerHTML = '<p class="text-center text-muted">No file selected</p>';
+            document.getElementById('recapPreview').innerHTML = '<p class="text-center text-muted">No file selected</p>';
+
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('changesSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'block';
+
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step3').classList.remove('completed');
+
+            hideError();
+
+            // Clear changes data and preview data
+            window.documentChanges = null;
+            window.previewData = null;
+        }
+
+        // Document Preview System
+        let previewData = {
+            originalHTML: '',
+            editableHTML: '',
+            originalTextById: new Map(),
+            modifiedIds: new Set(),
+            filename: ''
+        };
+
+        // Library loading status
+        let librariesLoaded = {
+            mammoth: false,
+            dompurify: false,
+            htmltodocx: false
+        };
+
+        // Check library loading status
+        function checkLibraries() {
+            librariesLoaded.mammoth = typeof mammoth !== 'undefined';
+            librariesLoaded.dompurify = typeof DOMPurify !== 'undefined';
+            librariesLoaded.htmltodocx = typeof HTMLtoDOCX !== 'undefined';
+            
+            console.log('Library loading status:', librariesLoaded);
+            
+            if (!librariesLoaded.mammoth || !librariesLoaded.dompurify) {
+                showError('Required libraries not loaded. Please refresh the page.');
+                return false;
+            }
+            
+            // Try to load HTMLtoDOCX if it's not available
+            if (!librariesLoaded.htmltodocx) {
+                console.log('HTMLtoDOCX not loaded, attempting to load...');
+                loadHTMLtoDOCX();
+            }
+            
+            return true;
+        }
+
+        // Load HTMLtoDOCX library dynamically if CDN fails
+        async function loadHTMLtoDOCX() {
+            try {
+                // Try to load from different sources
+                const sources = [
+                    'https://cdn.jsdelivr.net/npm/html-docx-js@1.4.7/dist/html-docx.min.js',
+                    'https://unpkg.com/html-docx-js@1.4.7/dist/html-docx.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/1.4.7/html-docx.min.js'
+                ];
+
+                for (const source of sources) {
+                    try {
+                        await loadScript(source);
+                        if (typeof HTMLtoDOCX !== 'undefined') {
+                            librariesLoaded.htmltodocx = true;
+                            console.log('HTMLtoDOCX loaded successfully from:', source);
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to load from:', source, e);
+                    }
+                }
+                
+                console.error('Failed to load HTMLtoDOCX from all sources');
+                
+            } catch (error) {
+                console.error('Error loading HTMLtoDOCX:', error);
+            }
+        }
+
+        // Load script dynamically
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                if (document.querySelector(`script[src="${src}"]`)) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Manual library reload function
+        async function reloadLibraries() {
+            try {
+                document.getElementById('editStatus').textContent = 'Reloading libraries...';
+                
+                // Remove existing HTMLtoDOCX scripts
+                document.querySelectorAll('script[src*="html-docx"]').forEach(script => script.remove());
+                
+                // Reset library status
+                librariesLoaded.htmltodocx = false;
+                
+                // Try to load again
+                await loadHTMLtoDOCX();
+                
+                if (librariesLoaded.htmltodocx) {
+                    document.getElementById('editStatus').textContent = 'Libraries reloaded successfully!';
+                    showError('Libraries reloaded successfully! Please try downloading again.');
+                } else {
+                    document.getElementById('editStatus').textContent = 'Failed to reload libraries';
+                    showError('Failed to reload libraries. Please refresh the page.');
+                }
+                
+            } catch (error) {
+                console.error('Error reloading libraries:', error);
+                document.getElementById('editStatus').textContent = 'Error reloading libraries';
+                showError('Error reloading libraries: ' + error.message);
+            }
+        }
+
+        // Debug function to check library status
+        function debugLibraries() {
+            console.log('=== Library Debug Info ===');
+            console.log('Mammoth:', typeof mammoth !== 'undefined' ? 'Loaded' : 'Not loaded');
+            console.log('DOMPurify:', typeof DOMPurify !== 'undefined' ? 'Loaded' : 'Not loaded');
+            console.log('HTMLtoDOCX:', typeof HTMLtoDOCX !== 'undefined' ? 'Loaded' : 'Not loaded');
+            
+            if (typeof HTMLtoDOCX !== 'undefined') {
+                console.log('HTMLtoDOCX methods:', Object.getOwnPropertyNames(HTMLtoDOCX));
+                console.log('HTMLtoDOCX.asBlob:', typeof HTMLtoDOCX.asBlob);
+            }
+            
+            console.log('Libraries loaded object:', librariesLoaded);
+            console.log('========================');
+        }
+
+        function showPreview() {
+            if (!window.currentDocumentUrl) {
+                showError('No document available for preview.');
+                return;
+            }
+
+            // Check if required libraries are loaded
+            if (!checkLibraries()) {
+                return;
+            }
+
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('previewSection').style.display = 'block';
+            
+            // Load document for preview
+            loadDocumentForPreview();
+        }
+
+        function hidePreview() {
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'block';
+        }
+
+        async function loadDocumentForPreview() {
+            try {
+                // Check if required libraries are loaded
+                if (typeof mammoth === 'undefined') {
+                    throw new Error('Mammoth library not loaded. Please refresh the page.');
+                }
+                if (typeof DOMPurify === 'undefined') {
+                    throw new Error('DOMPurify library not loaded. Please refresh the page.');
+                }
+
+                const originalContent = document.getElementById('originalContent');
+                const editableContent = document.getElementById('editableContent');
+                
+                originalContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p>Loading document...</p></div>';
+                editableContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p>Loading document...</p></div>';
+
+                // Fetch the DOCX file
+                const response = await fetch(window.currentDocumentUrl);
+                if (!response.ok) throw new Error(`Failed to fetch document (${response.status})`);
+                
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+
+                // Convert DOCX to HTML using Mammoth
+                const result = await mammoth.convertToHtml(
+                    { arrayBuffer },
+                    {
+                        styleMap: [
+                            "p[style-name='Heading 1'] => h1:fresh",
+                            "p[style-name='Heading 2'] => h2:fresh",
+                            "p[style-name='Heading 3'] => h3:fresh",
+                            "p[style-name='Normal'] => p:fresh",
+                        ],
+                    }
+                );
+
+                // Sanitize HTML
+                const cleanHTML = DOMPurify.sanitize(result.value, { WHOLE_DOCUMENT: false });
+                
+                // Prepare editable HTML
+                const prepared = prepareEditableHTML(cleanHTML);
+                
+                // Store preview data
+                previewData.originalHTML = cleanHTML;
+                previewData.editableHTML = prepared.html;
+                previewData.originalTextById = prepared.textMap;
+                previewData.filename = window.currentDocumentName || 'Edited_CP.docx';
+
+                // Display content
+                originalContent.innerHTML = cleanHTML;
+                editableContent.innerHTML = prepared.html;
+
+                // Set up event listeners for editing
+                setupEditListeners();
+                
+                // Update status
+                document.getElementById('editStatus').textContent = 'Ready to edit';
+                updateChangesSummary();
+
+            } catch (error) {
+                console.error('Preview loading error:', error);
+                const errorMsg = `<div class="text-center text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>Error loading document: ${error.message}</p></div>`;
+                document.getElementById('originalContent').innerHTML = errorMsg;
+                document.getElementById('editableContent').innerHTML = errorMsg;
+                document.getElementById('editStatus').textContent = 'Error loading document';
+            }
+        }
+
+        function prepareEditableHTML(inputHTML) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(inputHTML || "<div></div>", "text/html");
+            const textMap = new Map();
+            let counter = 0;
+
+            // Make headings, paragraphs, list items, and table cells editable
+            const selectors = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "td", "th"];
+            const nodes = doc.body.querySelectorAll(selectors.join(","));
+            
+            nodes.forEach((node) => {
+                const id = ++counter + "";
+                node.setAttribute("data-section-id", id);
+                node.setAttribute("contenteditable", "true");
+                node.setAttribute("role", "textbox");
+                node.setAttribute("aria-label", "Editable text block");
+                node.setAttribute("spellcheck", "true");
+                node.classList.add("transition-colors");
+                textMap.set(id, getNodeText(node));
+            });
+
+            return { html: doc.body.innerHTML, textMap };
+        }
+
+        function getNodeText(node) {
+            return (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
+        }
+
+        function getTextContent(element) {
+            // Extract clean text content from HTML element
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = element.innerHTML;
+            
+            // Remove all data attributes and editing-related attributes
+            tempDiv.querySelectorAll('[data-section-id]').forEach(el => {
+                el.removeAttribute('data-section-id');
+                el.removeAttribute('contenteditable');
+                el.removeAttribute('role');
+                el.removeAttribute('aria-label');
+                el.removeAttribute('spellcheck');
+            });
+            
+            // Get clean text with proper spacing
+            let text = tempDiv.innerText || tempDiv.textContent || '';
+            
+            // Clean up whitespace
+            text = text.replace(/\s+/g, ' ').trim();
+            
+            // Add line breaks for better readability
+            text = text.replace(/\s*\.\s*/g, '.\n');
+            text = text.replace(/\s*,\s*/g, ', ');
+            
+            return text;
+        }
+
+        function setupEditListeners() {
+            const editableContent = document.getElementById('editableContent');
+            
+            editableContent.addEventListener('input', function(e) {
+                const target = e.target;
+                const block = target.closest('[data-section-id]');
+                if (!block) return;
+                
+                const id = block.getAttribute('data-section-id');
+                const oldText = (previewData.originalTextById.get(id) || "").trim();
+                const newText = getNodeText(block).trim();
+
+                if (oldText !== newText) {
+                    previewData.modifiedIds.add(id);
+                    block.classList.add('modified');
+                } else {
+                    previewData.modifiedIds.delete(id);
+                    block.classList.remove('modified');
+                }
+                
+                updateChangesSummary();
+                document.getElementById('editStatus').textContent = 'You have unsaved edits';
+            });
+        }
+
+        function updateChangesSummary() {
+            const count = previewData.modifiedIds.size;
+            document.getElementById('changesSummary').textContent = `${count} section(s) modified`;
+        }
+
+        function saveEdits() {
+            document.getElementById('editStatus').textContent = 'Edits saved in this session';
+        }
+
+        function discardEdits() {
+            // Reset edited HTML back to original
+            const prepared = prepareEditableHTML(previewData.originalHTML);
+            previewData.editableHTML = prepared.html;
+            previewData.originalTextById = prepared.textMap;
+            previewData.modifiedIds.clear();
+            
+            document.getElementById('editableContent').innerHTML = prepared.html;
+            setupEditListeners();
+            updateChangesSummary();
+            document.getElementById('editStatus').textContent = 'Edits discarded';
+        }
+
+        async function downloadEdited() {
+            try {
+                document.getElementById('editStatus').textContent = 'Starting export process...';
+                
+                const editableContent = document.getElementById('editableContent');
+                
+                // Create a clean HTML without visual indicators
+                const cloned = editableContent.cloneNode(true);
+                cloned.querySelectorAll('[data-section-id]').forEach((el) => {
+                    el.classList.remove('modified');
+                    el.removeAttribute('contenteditable');
+                    el.removeAttribute('role');
+                    el.removeAttribute('aria-label');
+                    el.removeAttribute('spellcheck');
+                });
+
+                const html = wrapAsHtmlDocument(cloned.innerHTML);
+                document.getElementById('editStatus').textContent = 'HTML prepared, attempting DOCX conversion...';
+
+                // Try multiple export methods
+                let blob = null;
+                let exportMethod = '';
+
+                // Method 1: Try HTMLtoDOCX.asBlob
+                if (typeof HTMLtoDOCX !== 'undefined' && HTMLtoDOCX.asBlob) {
+                    try {
+                        document.getElementById('editStatus').textContent = 'Trying export method 1: HTMLtoDOCX.asBlob...';
+                        console.log('Attempting HTMLtoDOCX.asBlob...');
+                        blob = await HTMLtoDOCX.asBlob(html);
+                        exportMethod = 'HTMLtoDOCX.asBlob';
+                        console.log('HTMLtoDOCX.asBlob successful');
+                    } catch (e) {
+                        console.warn('HTMLtoDOCX.asBlob failed:', e);
+                        document.getElementById('editStatus').textContent = 'Method 1 failed, trying next method...';
+                    }
+                } else {
+                    console.warn('HTMLtoDOCX or asBlob method not available');
+                    document.getElementById('editStatus').textContent = 'HTMLtoDOCX not available, trying alternative methods...';
+                }
+
+                // Method 2: Try HTMLtoDOCX.asBlob with different syntax
+                if (!blob && typeof HTMLtoDOCX !== 'undefined' && HTMLtoDOCX.asBlob) {
+                    try {
+                        blob = HTMLtoDOCX.asBlob(html);
+                        exportMethod = 'HTMLtoDOCX.asBlob (sync)';
+                    } catch (e) {
+                        console.warn('HTMLtoDOCX.asBlob sync failed:', e);
+                    }
+                }
+
+                // Method 3: Try alternative export method
+                if (!blob && typeof HTMLtoDOCX !== 'undefined' && HTMLtoDOCX.asBlob) {
+                    try {
+                        const options = {
+                            margin: {
+                                top: 1440,
+                                right: 1440,
+                                bottom: 1440,
+                                left: 1440
+                            },
+                            table: { row: { cantSplit: true } },
+                            footer: true,
+                            pageNumber: true
+                        };
+                        blob = await HTMLtoDOCX.asBlob(html, options);
+                        exportMethod = 'HTMLtoDOCX.asBlob with options';
+                    } catch (e) {
+                        console.warn('HTMLtoDOCX.asBlob with options failed:', e);
+                    }
+                }
+
+                // Method 4: Try alternative DOCX export using different approach
+                if (!blob && typeof HTMLtoDOCX !== 'undefined') {
+                    try {
+                        console.log('Trying alternative DOCX export method...');
+                        // Try using a different export method if available
+                        if (HTMLtoDOCX.asBlob) {
+                            const options = {
+                                margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+                                table: { row: { cantSplit: true } },
+                                footer: true,
+                                pageNumber: true
+                            };
+                            blob = HTMLtoDOCX.asBlob(html, options);
+                            exportMethod = 'HTMLtoDOCX.asBlob with options (sync)';
+                        }
+                    } catch (e) {
+                        console.warn('Alternative DOCX export failed:', e);
+                    }
+                }
+
+                // Method 5: Fallback to text export if all DOCX methods fail
+                if (!blob) {
+                    console.warn('All DOCX export methods failed, falling back to text export');
+                    const textContent = getTextContent(cloned);
+                    blob = new Blob([textContent], { type: 'text/plain' });
+                    exportMethod = 'Text fallback';
+                    
+                    // Update filename for text export
+                    const textFilename = previewData.filename.replace('.docx', '.txt');
+                    downloadBlob(blob, textFilename);
+                    document.getElementById('editStatus').textContent = 'Document exported as text (DOCX export failed)';
+                    return;
+                }
+
+                // Success - download the DOCX
+                downloadBlob(blob, previewData.filename);
+                document.getElementById('editStatus').textContent = `Document downloaded successfully using ${exportMethod}`;
+                
+            } catch (error) {
+                console.error('Export error:', error);
+                showError('Failed to export edited document: ' + error.message);
+                
+                // Try to provide helpful error information
+                if (typeof HTMLtoDOCX === 'undefined') {
+                    showError('HTMLtoDOCX library not loaded. Please refresh the page and try again.');
+                } else {
+                    showError('Export failed. Please try refreshing the page or contact support.');
+                }
+            }
+        }
+
+        function wrapAsHtmlDocument(inner) {
+            return `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Edited Document</title>
+    <style>
+      body { font-family: Arial, sans-serif; }
+      table, td, th { border: 1px solid #ccc; border-collapse: collapse; }
+      td, th { padding: 4px; }
+      h1,h2,h3,h4,h5,h6 { margin: 0.5em 0; }
+      p, li { margin: 0.5em 0; }
+    </style>
+  </head>
+  <body>
+    ${inner}
+  </body>
+</html>`.trim();
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        // Handle view mode changes
+        document.getElementById('viewMode').addEventListener('change', function(e) {
+            const viewMode = e.target.value;
+            const originalPreview = document.getElementById('originalPreview');
+            const editablePreview = document.getElementById('editablePreview');
+            
+            if (viewMode === 'toggle') {
+                originalPreview.classList.remove('active');
+                editablePreview.classList.add('active');
+                editablePreview.classList.remove('col-md-6');
+                editablePreview.classList.add('col-md-12');
+            } else {
+                originalPreview.classList.add('active');
+                editablePreview.classList.add('active');
+                editablePreview.classList.remove('col-md-12');
+                editablePreview.classList.add('col-md-6');
+            }
+        });
+
+        // Scroll to upload section
+        function scrollToUpload() {
+            document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTMLtoDOCX Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@1.4.7/dist/html-docx.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js@1.4.7/dist/html-docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-docx-js/1.4.7/html-docx.min.js"></script>
+</head>
+<body>
+    <h1>HTMLtoDOCX Library Test</h1>
+    
+    <div id="content">
+        <h2>Test Document</h2>
+        <p>This is a test paragraph to verify that the HTMLtoDOCX library is working correctly.</p>
+        <p>It should be able to convert this HTML content to a DOCX file.</p>
+        
+        <h3>Features to Test</h3>
+        <ul>
+            <li>Basic text formatting</li>
+            <li>Headings and paragraphs</li>
+            <li>Lists and bullet points</li>
+        </ul>
+        
+        <table border="1">
+            <tr>
+                <th>Column 1</th>
+                <th>Column 2</th>
+            </tr>
+            <tr>
+                <td>Data 1</td>
+                <td>Data 2</td>
+            </tr>
+        </table>
+    </div>
+    
+    <button onclick="testExport()">Test Export to DOCX</button>
+    <button onclick="checkLibrary()">Check Library Status</button>
+    
+    <div id="status"></div>
+    
+    <script>
+        function checkLibrary() {
+            const status = document.getElementById('status');
+            status.innerHTML = '';
+            
+            console.log('=== Library Check ===');
+            console.log('HTMLtoDOCX:', typeof HTMLtoDOCX);
+            
+            if (typeof HTMLtoDOCX !== 'undefined') {
+                console.log('HTMLtoDOCX methods:', Object.getOwnPropertyNames(HTMLtoDOCX));
+                console.log('asBlob method:', typeof HTMLtoDOCX.asBlob);
+                
+                status.innerHTML = `
+                    <h3>Library Status:</h3>
+                    <p>HTMLtoDOCX: ✅ Loaded</p>
+                    <p>Methods: ${Object.getOwnPropertyNames(HTMLtoDOCX).join(', ')}</p>
+                    <p>asBlob: ${typeof HTMLtoDOCX.asBlob}</p>
+                `;
+            } else {
+                status.innerHTML = `
+                    <h3>Library Status:</h3>
+                    <p>HTMLtoDOCX: ❌ Not loaded</p>
+                `;
+            }
+        }
+        
+        async function testExport() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>Testing export...</p>';
+            
+            try {
+                if (typeof HTMLtoDOCX === 'undefined') {
+                    throw new Error('HTMLtoDOCX library not loaded');
+                }
+                
+                if (typeof HTMLtoDOCX.asBlob !== 'function') {
+                    throw new Error('HTMLtoDOCX.asBlob method not available');
+                }
+                
+                const content = document.getElementById('content').innerHTML;
+                const html = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>Test Document</title>
+                    </head>
+                    <body>
+                        ${content}
+                    </body>
+                    </html>
+                `;
+                
+                console.log('Attempting export...');
+                const blob = await HTMLtoDOCX.asBlob(html);
+                console.log('Export successful, blob:', blob);
+                
+                // Download the file
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test_document.docx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                
+                status.innerHTML = '<p>✅ Export successful! File downloaded as test_document.docx</p>';
+                
+            } catch (error) {
+                console.error('Export failed:', error);
+                status.innerHTML = `<p>❌ Export failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Check library on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkLibrary, 1000);
+        });
+    </script>
+</body>
+</html>
