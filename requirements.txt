@@ -3,3 +3,4 @@ werkzeug
 PyMuPDF
 python-docx
 requests
+gunicorn
