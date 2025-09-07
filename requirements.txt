@@ -1,0 +1,5 @@
+Flask
+werkzeug
+PyMuPDF
+python-docx
+requests
